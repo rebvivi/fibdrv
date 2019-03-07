@@ -38,3 +38,7 @@ check: all
 	sudo ./client > out
 	$(MAKE) unload
 	@diff -u out expected.txt && $(call pass)
+
+plot: output.txt
+	gnuplot runtime_client.gp
+	
