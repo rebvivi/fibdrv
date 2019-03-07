@@ -11,33 +11,77 @@ MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
 MODULE_DESCRIPTION("Fibonacci engine driver");
 MODULE_VERSION("0.1");
-
+#define BIT_SIZE 50
 #define DEV_FIBONACCI_NAME "fibonacci"
 
 /* MAX_LENGTH is set to 92 because
  * ssize_t can't fit the number > 92
  */
-#define MAX_LENGTH 92
+#define MAX_LENGTH 10000
 
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
 
-static long long fib_sequence(long long k)
+static int *fib_sequence(int g)
 {
-    /* FIXME: use clz/ctz and fast algorithms to speed up */
-    long long f[k + 2];
-
-    f[0] = 0;
-    f[1] = 1;
-
-    for (int i = 2; i <= k; i++) {
-        f[i] = f[i - 1] + f[i - 2];
+    int FIB_AMOUNT = g + 1;
+    int fib[FIB_AMOUNT][BIT_SIZE];
+    int *ee;
+    int i, j, k, r1, s1, carry = 0, sum = 0, temp = 0, t;
+    // Set all values of the hold array to 0
+    for (i = 0; i < FIB_AMOUNT; i++) {
+        for (j = 0; j < BIT_SIZE; j++) {
+            fib[i][j] = 0;
+            // ee[j]=0;
+        }
     }
+    // Assign the first two Fibonacci numbers
+    fib[0][BIT_SIZE - 1] = 1;
+    fib[1][BIT_SIZE - 1] = 1;
+    for (k = 2; k <= FIB_AMOUNT; k++) {
+        r1 = 0;
+        // Find the start of number Fn−1
+        while (fib[k - 1][r1] == 0)
+            r1 = r1 + 1;
+        // Set the carry−over to zero
+        carry = 0;
+        // Start from the end of Fn−1 moving left
+        // for ( s1 =199; s1>=r1 ; s1=s1 - 1)
+        for (s1 = BIT_SIZE - 1; s1 >= r1; s1 = s1 - 1) {
+            // Add two sequential digits
+            sum = (fib[k - 1][s1] + fib[k - 2][s1]) + carry;
+            // Deal with sums>10 , calculate the carry over
+            if (sum >= 10) {
+                temp = sum % 10;
+                carry = (sum - temp) / 10;
+                sum = temp;
+                if (s1 == r1)
+                    r1 = r1 - 1;
+            } else
+                carry = 0;
+            // Set the digit in Fn to the value calculated
+            fib[k][s1] = sum;
+        }
+        // t = 0 ;
+        // Print out Fn
+        // while ( fib [ k-2 ] [ t ] == 0 )
+        // t = t + 1 ;
+        // printf ( "%d" , fib[ k ] [ j ] );
+        // for ( j=t ; j <BIT_SIZE; j++)
+        // printf ( "%d" , fib[ k-2 ] [ j ] ) ;
+        // printf ( "\n" );
+    }
+    t = 0;
+    while (fib[g - 1][t] == 0)
+        t = t + 1;
 
-    return f[k];
+
+    ee = &(fib[g - 1][t]);
+    return ee;
 }
+
 
 static int fib_open(struct inode *inode, struct file *file)
 {
