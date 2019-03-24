@@ -6,6 +6,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
+#include <linux/uaccess.h>
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
@@ -24,24 +25,34 @@ static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
 
-static long long fib_sequence(long long n)
+#define BIT_SIZE 20
+//#define FIB_AMOUNT 1000
+
+struct U64 {
+    unsigned long long msl;
+    unsigned long long lsl;
+};
+static long long fib_sequence(long long g, char *buf, size_t size)
 {
-    /* FIXME: use clz/ctz and fast algorithms to speed up */
-    long long i, h, j, k, t;
-    i = h = 1;
-    j = k = 0;
-    while (n > 0) {
-        if (n % 2 == 1) {
-            t = j * h;
-            j = i * h + j * k + t;
-            i = i * k + t;
+    unsigned long long a;
+    a = 10000000000000000000;
+    struct U64 fib[g + 1];
+    memset(fib, 0, sizeof(struct U64) * (g + 1));
+
+    int k;
+    fib[0].lsl = 1;
+    fib[1].lsl = 1;
+    for (k = 2; k <= g; k++) {
+        fib[k].lsl = fib[k - 1].lsl + fib[k - 2].lsl;
+        fib[k].msl = fib[k - 1].msl + fib[k - 2].msl;
+        if (fib[k].lsl > a) {
+            fib[k].lsl = fib[k].lsl - a;
+            fib[k].msl = fib[k].msl + 1;
         }
-        t = h * h;
-        h = 2 * k * h + t;
-        k = k * k + t;
-        n = (long long) n / 2;
     }
-    return j;
+
+    copy_to_user(buf, &fib[g - 1], size);
+    return 1;
 }
 
 static int fib_open(struct inode *inode, struct file *file)
@@ -65,11 +76,10 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    /*ktime_t ktime = ktime_get();
-    fib_sequence(*offset);
+    ktime_t ktime = ktime_get();
+    fib_sequence(*offset, buf, size);
     unsigned int ns = ktime_to_ns(ktime_sub(ktime_get(), ktime));
-    return ns;*/
-    return (ssize_t) fib_sequence(*offset);
+    return ns;
 }
 
 /* write operation is skipped */
