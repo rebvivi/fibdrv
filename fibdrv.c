@@ -18,7 +18,7 @@ MODULE_VERSION("0.1");
 /* MAX_LENGTH is set to 92 because
  * ssize_t can't fit the number > 92
  */
-#define MAX_LENGTH 92
+#define MAX_LENGTH 184
 
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
@@ -36,7 +36,7 @@ static long long fib_sequence(long long g, char *buf, size_t size)
 {
     unsigned long long a;
     a = 10000000000000000000;
-    struct U64 fib[g + 1];
+    struct U64 fib[g + 1], tmp = {0};
     memset(fib, 0, sizeof(struct U64) * (g + 1));
 
     int k;
@@ -50,8 +50,15 @@ static long long fib_sequence(long long g, char *buf, size_t size)
             fib[k].msl = fib[k].msl + 1;
         }
     }
+    tmp = fib[g - 1];
+    printk(
+        "Valid memory address range is at least from %p to %p\n"
+        "Address of `fib[g - 1].msl` is %p, whereas address of `fib[g - "
+        "1].lsl` is %p\n"
+        "Address we copying now is %p",
+        &fib[g - 2], &fib[g - 1].msl, &fib[g - 1].lsl, &fib[g].lsl, &tmp);
 
-    copy_to_user(buf, &fib[g - 1], size);
+    copy_to_user(buf, &tmp, size);
     return 1;
 }
 

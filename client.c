@@ -32,7 +32,7 @@ int main()
 
     struct U64 buf;
     char write_buf[] = "testing writing";
-    int offset = 100;  // TODO: test something bigger than the limit
+    int offset = 184;  // TODO: test something bigger than the limit
     int i = 0;
 
     // FILE *fp = fopen("time.txt", "wb+");
@@ -51,10 +51,23 @@ int main()
         clock_gettime(CLOCK_REALTIME, &end);
         // fprintf(fp, "%d %d %lld %lld\n",i, diff_in_ns(start, end),
         // atoll(buf),diff_in_ns(start, end) - atoll(buf));
-        printf("Reading from " FIB_DEV
-               " at offset %d, returned the sequence "
-               "%lld%lld\n",
-               i, buf.msl, buf.lsl);
+        if (buf.lsl < 1000000000000000000 && buf.lsl > 100000000000000000) {
+            printf("Reading from " FIB_DEV
+                   " at offset %d, returned the sequence "
+                   "%llu0%llu\n",
+                   i, buf.msl, buf.lsl);
+        } else if (buf.lsl < 100000000000000000 &&
+                   buf.lsl > 10000000000000000) {
+            printf("Reading from " FIB_DEV
+                   " at offset %d, returned the sequence "
+                   "%llu00%llu\n",
+                   i, buf.msl, buf.lsl);
+        } else {
+            printf("Reading from " FIB_DEV
+                   " at offset %d, returned the sequence "
+                   "%llu%llu\n",
+                   i, buf.msl, buf.lsl);
+        }
     }
 
     // fclose(fp);
